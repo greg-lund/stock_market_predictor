@@ -1,7 +1,9 @@
 import sys
+import os
 import csv
 import numpy as np
 from keras.models import Sequential
+from keras.models import model_from_json
 from keras.layers import LSTM
 from keras.layers import Dense
 import matplotlib.pyplot as plt
@@ -23,7 +25,6 @@ def create_univar_tset(arr, n_input, n_output, num_sets):
 def create_multivar_tset(arrs, n_input, n_output, num_sets):
     X,y = [],[]
     i = 0
-
 
 #Min-Max normalization: take a 1D array and linearly transform to [0,1]
 def normalize_min_max(arr):
@@ -82,21 +83,16 @@ def pcc(x,y):
     return cc
 
 def main():
-    if(len(sys.argv) != 2):
-        print("Usage: train_classifier.py <file_name>")
+    if(len(sys.argv) != 3):
+        print("Usage: train_classifier.py <data_file_name> <output_model_name>")
         return
     else:
         input_file = sys.argv[1]
+        output_file = sys.argv[2]
         print("Reading from: " + input_file)
 
-    x = [.1,.2,.3,.4]
-    y = [.2,.3,.4,.5]
-    err = mse(x,y)
-    print(x , y)
-    print(err)
     attr_open = []
     attr_volume = []
-
     #Read in stock data from the csv
     with open(input_file) as csv_file:
         csv_reader = csv.DictReader(csv_file)
@@ -118,7 +114,7 @@ def main():
     #define our training data
     n_input = 60
     n_output = 5
-    num_sets = 4000
+    num_sets = 400
     n_features = 1
     n_epochs = 1
 
@@ -134,6 +130,14 @@ def main():
     model.compile(optimizer='adam', loss='mse')
     model.fit(X, y, epochs = n_epochs, verbose=1)
 
+    #Write our model to our output file name
+    model_out = model.to_json()
+    with open(output_file + ".json", "w") as ofile:
+        ofile.write(model_out)
+    model.save_weights(output_file + ".h5")
+    print("LSTM saved as %s, nodes saved as %s" % ((output_file + ".json"), (output_file + ".h5")))
+
+
     #Test our prediction
     lbound = num_sets + 1
     rbound = lbound + n_input
@@ -143,8 +147,9 @@ def main():
     print("Testing our model...")
     y_pred = model.predict(x_test, verbose=0)
     y_pred = y_pred.reshape(n_output)
-    err = mse(y_pred, y_test)
-    print(err)
+    err = rse(y_pred, y_test)
+    cc = pcc(y_pred, y_test)
+    print("RSE: %f , PCC: %f" % (err,cc))
     plot_test(x_test.reshape(n_input),y_test, y_pred)
 
 
