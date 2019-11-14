@@ -8,7 +8,7 @@ file_out = "./testing.csv"
 
 PARAMS = {
         'function': "TIME_SERIES_DAILY",
-        'symbol': "MSFT",
+        'symbol': "WMT",
         'datatype': "csv",
         'outputsize':"full",
         'apikey': api_key
