@@ -105,6 +105,7 @@ def main():
     normalize_min_max(attr_open)
     normalize_min_max(attr_volume)
 
+    #Start of implementation for multivariate input
     set = np.hstack((np.array(attr_open).reshape(len(attr_open),1),np.array(attr_volume).reshape(len(attr_volume),1)))
 
     #Define our RNN
@@ -112,11 +113,11 @@ def main():
     nodes_2 = 50
 
     #define our training data
-    n_input = 60
-    n_output = 5
-    num_sets = 400
+    n_input = 200
+    n_output = 20
+    num_sets = 750
     n_features = 1
-    n_epochs = 1
+    n_epochs = 20
 
     #create our testing sets, and reshape for input to lstm
     X,y = create_univar_tset(attr_open, n_input, n_output, num_sets)
