@@ -20,11 +20,27 @@ def create_univar_tset(arr, n_input, n_output, num_sets):
         i+=1
     return np.array(X),np.array(y)
 
-#Create num_sets testing sets from multiple inputs in arrs
-#The first list in arrs will be the output data
-def create_multivar_tset(arrs, n_input, n_output, num_sets):
-    X,y = [],[]
+#Create a testing set from arr1 and arr2
+#arr1 will be used for output
+def create_2d_tset(arr1, arr2, n_input, n_output, num_sets):
+    if(num_sets == "all"):
+        num_sets = np.Inf
+    if(len(arr1) < len(arr2)):
+        l = len(arr1)
+    else:
+        l = len(arr2)
+
+    arr = np.stack((arr1[0:l],arr2[0:l]), axis = -1)
+    X, y = [], []
     i = 0
+
+    while(i <= l - n_input - n_output and i < num_sets):
+        X = np.append(X, arr[i:i+n_input])
+        y = np.append(y, arr1[i+n_input:i+n_input+n_output])
+        i+=1
+
+    return X.reshape(i,n_input,2),y.reshape(i,n_output)
+
 
 #Min-Max normalization: take a 1D array and linearly transform to [0,1]
 def normalize_min_max(arr):
@@ -105,28 +121,24 @@ def main():
     normalize_min_max(attr_open)
     normalize_min_max(attr_volume)
 
-    #Start of implementation for multivariate input
-    set = np.hstack((np.array(attr_open).reshape(len(attr_open),1),np.array(attr_volume).reshape(len(attr_volume),1)))
-
     #Define our RNN
-    n_nodes = 100
-    nodes_2 = 50
+    nodes = [400,400,300,200]
 
     #define our training data
-    n_input = 200
+    n_input = 400
     n_output = 20
-    num_sets = 750
-    n_features = 1
+    num_sets = 1250
+    n_features = 2
     n_epochs = 20
 
     #create our testing sets, and reshape for input to lstm
-    X,y = create_univar_tset(attr_open, n_input, n_output, num_sets)
-    X = X.reshape((X.shape[0],X.shape[1],n_features))
+    X,y = create_2d_tset(attr_open, attr_volume, n_input, n_output, num_sets)
 
     #create the lstm
     model = Sequential()
-    model.add(LSTM(n_nodes, activation='relu', input_shape=(n_input, n_features)))
-    model.add(Dense(nodes_2)) #2nd hidden layer
+    model.add(LSTM(nodes[0], activation='relu', input_shape=(n_input, n_features)))
+    for i in range(1,len(nodes)):
+        model.add(Dense(nodes[i]))
     model.add(Dense(n_output))
     model.compile(optimizer='adam', loss='mse')
     model.fit(X, y, epochs = n_epochs, verbose=1)
@@ -142,8 +154,11 @@ def main():
     #Test our prediction
     lbound = num_sets + 1
     rbound = lbound + n_input
-    x_test = np.array(attr_open[lbound:rbound])
+    x_open = attr_open[lbound:rbound]
+    x_volume = attr_volume[lbound:rbound]
+    x_test = np.stack((x_open,x_volume), axis=-1)
     x_test = x_test.reshape((1,n_input,n_features))
+
     y_test = np.array(attr_open[rbound:rbound+n_output])
     print("Testing our model...")
     y_pred = model.predict(x_test, verbose=0)
@@ -151,7 +166,7 @@ def main():
     err = rse(y_pred, y_test)
     cc = pcc(y_pred, y_test)
     print("RSE: %f , PCC: %f" % (err,cc))
-    plot_test(x_test.reshape(n_input),y_test, y_pred)
+    plot_test(x_open,y_test, y_pred)
 
 
 if __name__ == "__main__":
