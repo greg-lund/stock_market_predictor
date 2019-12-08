@@ -7,4 +7,4 @@ This project served as the final project for CSCI: 4502, Data Mining. The goal o
 ### Initial Multivariate Testing
 This test utilized a network with an input data stream of daily stock price and volume sold going 80 weeks into the past, with a prediction of 4 weeks into the future. The network consists of 4 hidden layers of size 400,400,300 and 200 nodes. It was trained on 1250 sets. 
 
-![Initial 2D Results](/graphs/2d_test_1.png | width=200)
+![Initial 2D Results](/graphs/2d_test_1.png) <!-- .element width="50%" -->
