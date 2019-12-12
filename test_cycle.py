@@ -66,6 +66,11 @@ def main():
     err = 0
     r2 = 0
     cc = 0
+
+    model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+    accuracy = model.evaluate(X,Y,verbose=1)
+    print("Overall accuracy via Keras is: ", 100*accuracy[1] , "%")
+
     for i in range(0,len(X)):
         lbound = i + 1
         rbound = lbound + n_input
