@@ -46,26 +46,42 @@ def main():
     X,Y = create_2d_tset(attr_open, attr_volume, n_input, n_output, num_sets)
 
     # testing
-    for i in range(1,3):
-        num_sets *= i
-        lbound = num_sets + 1
+    # for i in range(1,3):
+    #     lbound = num_sets + 1
+    #     rbound = lbound + n_input
+    #     x_open = attr_open[lbound:rbound]
+    #     x_volume = attr_volume[lbound:rbound]
+    #     x_test = np.stack((x_open,x_volume), axis=-1)
+    #     x_test = x_test.reshape((1,n_input,n_features))
+    #
+    #     y_test = np.array(attr_open[rbound:rbound+n_output])
+    #     print("Testing our model...")
+    #     y_pred = model.predict(x_test, verbose=0)
+    #     y_pred = y_pred.reshape(n_output)
+    #     err = rse(y_pred, y_test)
+    #     cc = pcc(y_pred, y_test)
+    #     r2 = r2_score(y_pred,y_test)
+    #     print("r2: %f" % r2)
+    #     print("RSE: %f , PCC: %f" % (err,cc))
+    err = 0
+    r2 = 0
+    cc = 0
+    for i in range(0,len(X)):
+        lbound = i + 1
         rbound = lbound + n_input
-        x_open = attr_open[lbound:rbound]
-        x_volume = attr_volume[lbound:rbound]
-        x_test = np.stack((x_open,x_volume), axis=-1)
-        x_test = x_test.reshape((1,n_input,n_features))
-
+        x_test = X[i].reshape((1,n_input,2))
+        y_pred = model.predict(x_test , verbose = 0)
         y_test = np.array(attr_open[rbound:rbound+n_output])
-        print("Testing our model...")
-        y_pred = model.predict(x_test, verbose=0)
         y_pred = y_pred.reshape(n_output)
-        err = rse(y_pred, y_test)
-        cc = pcc(y_pred, y_test)
-        r2 = r2_score(y_pred,y_test)
-        print("r2: %f" % r2)
-        print("RSE: %f , PCC: %f" % (err,cc))
+        err += rse(y_pred, y_test)
+        cc += pcc(y_pred, y_test)
+        r2 += r2_score(y_pred,y_test)
 
-
+    r2 = r2/len(X)
+    err = err/len(X)
+    cc = cc/len(X)
+    print("r2: %f" % r2)
+    print("RSE: %f , PCC: %f" % (err,cc))
     quit()
 
 if __name__ == "__main__":
