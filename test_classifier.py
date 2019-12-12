@@ -134,6 +134,18 @@ def main():
     test_model.load_weights(file_h5)
     print("Loaded model")
 
+    #Test our model via Keras
+    #test_model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+    #accuracy = test_model.evaluate(X,y,verbose=1)
+    #print("Overall accuracy via Keras is: ", 100*accuracy[1] , "%")
+
+    #Find the highest correlated and lowest rse
+    for i in range(0,len(X)):
+        x_test = X[i].reshape((1,n_input,2))
+        y_pred = test_model.predict(x_test , verbose = 0)
+        y_pred = y_pred.reshape(n_output)
+
+
 
 if __name__ == "__main__":
     main()
