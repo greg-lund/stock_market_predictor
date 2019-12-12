@@ -9,8 +9,8 @@ from keras.layers import Dense
 import matplotlib.pyplot as plt
 
 #Create num_sets testing sets from arr
-def create_univar_tset(arr, n_input, n_output, num_sets):
-    if(num_sets == "all"):
+def create_univar_tset(arr, n_input, n_output):
+    if(num_sets is "all"):
         num_sets = np.Inf
     X, y = [], []
     i = 0
@@ -22,9 +22,7 @@ def create_univar_tset(arr, n_input, n_output, num_sets):
 
 #Create a testing set from arr1 and arr2
 #arr1 will be used for output
-def create_2d_tset(arr1, arr2, n_input, n_output, num_sets):
-    if(num_sets == "all"):
-        num_sets = np.Inf
+def create_2d_tset(arr1, arr2, n_input, n_output, start_index):
     if(len(arr1) < len(arr2)):
         l = len(arr1)
     else:
@@ -32,14 +30,14 @@ def create_2d_tset(arr1, arr2, n_input, n_output, num_sets):
 
     arr = np.stack((arr1[0:l],arr2[0:l]), axis = -1)
     X, y = [], []
-    i = 0
+    i = start_index
 
-    while(i <= l - n_input - n_output and i < num_sets):
+    while(i <= l - n_input - n_output):
         X = np.append(X, arr[i:i+n_input])
         y = np.append(y, arr1[i+n_input:i+n_input+n_output])
         i+=1
 
-    return X.reshape(i,n_input,2),y.reshape(i,n_output)
+    return X.reshape(i-start_index,n_input,2),y.reshape(i-start_index,n_output)
 
 
 #Min-Max normalization: take a 1D array and linearly transform to [0,1]
@@ -99,13 +97,19 @@ def pcc(x,y):
     return cc
 
 def main():
-    if(len(sys.argv) != 3):
-        print("Usage: train_classifier.py <data_file_name> <output_model_name>")
+    if(len(sys.argv) != 7):
+        print("Usage: train_classifier.py <data_file_name> <h5_file_name> <json_file_name> <n_input> <n_output> <start_index>")
         return
     else:
         input_file = sys.argv[1]
-        output_file = sys.argv[2]
-        print("Reading from: " + input_file)
+        file_h5 = sys.argv[2]
+        file_json = sys.argv[3]
+        n_input = int(sys.argv[4])
+        n_output = int(sys.argv[5])
+        start_index = int(sys.argv[6])
+        print("Reading model at " , file_h5 , " and " , file_json)
+        print("Reading data from: " + input_file)
+
 
     attr_open = []
     attr_volume = []
@@ -115,58 +119,20 @@ def main():
         for row in csv_reader:
             attr_open.insert(0,float(row['open']))
             attr_volume.insert(0,float(row['volume']))
-    print("Done reading, closing file")
+    print("Done reading data, closing ", input_file)
 
     #Let's normalize our input data to [0,1] via min-max
     normalize_min_max(attr_open)
     normalize_min_max(attr_volume)
 
-    #Define our RNN
-    nodes = [500,500,400,400,300,200]
-
-    #define our training data
-    n_input = 800
-    n_output = 10
-    num_sets = 3200
-    n_features = 2
-    n_epochs = 40
-
     #create our testing sets, and reshape for input to lstm
-    X,y = create_2d_tset(attr_open, attr_volume, n_input, n_output, num_sets)
+    X,y = create_2d_tset(attr_open, attr_volume, n_input, n_output, start_index)
 
-    #create the lstm
-    model = Sequential()
-    model.add(LSTM(nodes[0], activation='relu', input_shape=(n_input, n_features)))
-    for i in range(1,len(nodes)):
-        model.add(Dense(nodes[i]))
-    model.add(Dense(n_output))
-    model.compile(optimizer='adam', loss='mse')
-    model.fit(X, y, epochs = n_epochs, verbose=1)
-
-    #Write our model to our output file name
-    model_out = model.to_json()
-    with open(output_file + ".json", "w") as ofile:
-        ofile.write(model_out)
-    model.save_weights(output_file + ".h5")
-    print("LSTM saved as %s, nodes saved as %s" % ((output_file + ".json"), (output_file + ".h5")))
-
-
-    #Test our prediction
-    lbound = num_sets + 1
-    rbound = lbound + n_input
-    x_open = attr_open[lbound:rbound]
-    x_volume = attr_volume[lbound:rbound]
-    x_test = np.stack((x_open,x_volume), axis=-1)
-    x_test = x_test.reshape((1,n_input,n_features))
-
-    y_test = np.array(attr_open[rbound:rbound+n_output])
-    print("Testing our model...")
-    y_pred = model.predict(x_test, verbose=0)
-    y_pred = y_pred.reshape(n_output)
-    err = rse(y_pred, y_test)
-    cc = pcc(y_pred, y_test)
-    print("RSE: %f , PCC: %f" % (err,cc))
-    plot_test(x_open,y_test, y_pred)
+    #Load our model
+    json_model = (open(file_json,'r')).read()
+    test_model = model_from_json(json_model)
+    test_model.load_weights(file_h5)
+    print("Loaded model")
 
 
 if __name__ == "__main__":
